@@ -16,8 +16,34 @@ Engineering documentation for the Metadamen codebase.
 | Architecture | [Architecture overview](architecture/overview.md) |
 | Database | [ERD, schemas and users](database/erd.md) |
 
+## Read online
+
+**https://metadamen-ai-career-os.github.io/metadamen-engineering-docs/**
+
+The site is rebuilt and published automatically on every push to `main`.
+
 ## Contributing
 
-- Write docs in plain Markdown. Draw diagrams with [Mermaid](https://mermaid.js.org) in a ` ```mermaid ` block; GitHub renders them.
-- Put each doc in a folder that matches its topic, and add it to the table above.
+- Write docs in plain Markdown. Draw diagrams with [Mermaid](https://mermaid.js.org) in a ` ```mermaid ` block; GitHub and the site both draw them.
+- Put each doc in a folder that matches its topic. Add it to the table above **and** to `sidebar` in `.vitepress/config.mts`.
 - When code changes something a doc describes (a new table, a new service), update the doc in the same week.
+- These docs are **public**. Never put passwords, tokens, keys or AWS account IDs in them.
+
+### Preview the site on your laptop
+
+Needs Node.js 24 and npm 11 (see the [setup guide](getting-started/local-setup.md)).
+
+```bash
+npm install
+```
+
+```bash
+npm run docs:dev
+```
+
+Open the address it prints. Pages reload as you edit. Before opening a pull request, check the full build passes;
+it fails on broken links:
+
+```bash
+npm run docs:build
+```
