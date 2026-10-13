@@ -35,7 +35,7 @@ erDiagram
         uuid id PK "uuidv7"
         text cognito_sub UK "null until first sign-in"
         text email UK "lowercase"
-        text phone UK "E.164, e.g. +919876543210"
+        text phone UK "E.164: + country code + number"
         boolean email_verified
         boolean phone_verified
         text display_name
