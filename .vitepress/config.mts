@@ -34,6 +34,7 @@ export default withMermaid(
         { text: "Local setup", link: "/getting-started/local-setup" },
         { text: "Architecture", link: "/architecture/overview" },
         { text: "Database", link: "/database/erd" },
+        { text: "Backend", link: "/services/backend-svc" },
       ],
 
       // Add every new doc here as well as to README.md.
@@ -42,6 +43,8 @@ export default withMermaid(
         { text: "Getting started", items: [{ text: "Set up your local environment", link: "/getting-started/local-setup" }] },
         { text: "Architecture", items: [{ text: "Architecture overview", link: "/architecture/overview" }] },
         { text: "Database", items: [{ text: "ERD, schemas and users", link: "/database/erd" }] },
+        { text: "Services", items: [{ text: "Backend service", link: "/services/backend-svc" }] },
+        { text: "Guides", items: [{ text: "Shared packages", link: "/guides/shared-packages" }] },
       ],
 
       outline: { level: [2, 3], label: "On this page" },

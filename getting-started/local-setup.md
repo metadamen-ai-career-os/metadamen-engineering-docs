@@ -20,8 +20,9 @@ New to the system? Read the [Architecture overview](../architecture/overview.md)
 5. [Start Postgres and local AWS](#5-start-postgres-and-local-aws-metadamen-tooling)
 6. [Log in to GitHub Packages](#6-log-in-to-github-packages-one-time)
 7. [Set up the shared libraries and database](#7-set-up-the-shared-libraries-and-database-metadamen-packages)
-8. [Run the web app](#8-run-the-web-app-metadamen-web-app)
-9. [AWS infrastructure (only if you deploy)](#9-aws-infrastructure-metadamen-infra-only-if-you-deploy)
+8. [Run the backend API](#8-run-the-backend-api-metadamen-backend-svc)
+9. [Run the web app](#9-run-the-web-app-metadamen-web-app)
+10. [AWS infrastructure (only if you deploy)](#10-aws-infrastructure-metadamen-infra-only-if-you-deploy)
 
 ---
 
@@ -31,12 +32,14 @@ New to the system? Read the [Architecture overview](../architecture/overview.md)
 flowchart LR
     subgraph laptop["Your laptop"]
         web["metadamen-web-app<br/>localhost:5173"]
+        api["metadamen-backend-svc<br/>localhost:3000"]
         pkgs["metadamen-packages<br/>migrations"]
         subgraph docker["Docker (metadamen-tooling)"]
             pg[("Postgres 18<br/>localhost:5432")]
             floci["Floci = local AWS<br/>localhost:4566"]
             ui["Floci console<br/>localhost:4500"]
         end
+        web -- "API calls" --> api
         pkgs --> pg
         ui --> floci
     end
@@ -46,11 +49,12 @@ flowchart LR
 metadamen/                   one folder, all repos side by side
 ├── metadamen-tooling        Postgres + local AWS (Floci) in Docker
 ├── metadamen-packages       Shared libraries (logger, db-postgres) and database migrations
+├── metadamen-backend-svc    Main API (AWS Lambda handlers + a local dev server)
 ├── metadamen-web-app        React web app
 └── metadamen-infra          AWS infrastructure (CDK). Only needed if you deploy
 ```
 
-The backend services and the public website don't have code yet. This guide will cover them once they do.
+The notification and LLM services and the public website don't have code yet. This guide will cover them once they do.
 
 ---
 
@@ -233,6 +237,10 @@ git clone git@github.com:metadamen-ai-career-os/metadamen-packages.git
 ```
 
 ```bash
+git clone git@github.com:metadamen-ai-career-os/metadamen-backend-svc.git
+```
+
+```bash
 git clone git@github.com:metadamen-ai-career-os/metadamen-web-app.git
 ```
 
@@ -246,18 +254,19 @@ git clone git@github.com:metadamen-ai-career-os/metadamen-infra.git
 
 This repo starts everything the services need in Docker, so you never install Postgres by hand or use a real AWS account for development.
 
-**Check ports 5432, 4566 and 4500 are free.** No output means they're free.
+**Check ports 5432, 4566, 4500, 3000 and 5173 are free.** No output means they're free.
+(3000 is for the backend API and 5173 for the web app, later in this guide.)
 
 macOS:
 
 ```bash
-lsof -i :5432 -i :4566 -i :4500
+lsof -i :5432 -i :4566 -i :4500 -i :3000 -i :5173
 ```
 
 Windows:
 
 ```powershell
-Get-NetTCPConnection -LocalPort 5432,4566,4500 -State Listen -ErrorAction SilentlyContinue
+Get-NetTCPConnection -LocalPort 5432,4566,4500,3000,5173 -State Listen -ErrorAction SilentlyContinue
 ```
 
 If something is using them (often a locally installed Postgres), stop it, or change the ports: copy `.env.example`
@@ -370,7 +379,36 @@ More details: [metadamen-packages README](https://github.com/metadamen-ai-career
 
 ---
 
-## 8. Run the web app (`metadamen-web-app`)
+## 8. Run the backend API (`metadamen-backend-svc`)
+
+From your `metadamen` folder:
+
+```bash
+cd metadamen-backend-svc
+```
+
+```bash
+npm install
+```
+
+```bash
+npm run dev
+```
+
+It prints `Dev server running on http://localhost:3000`. Leave it running; it restarts by itself when you save a file.
+Open [http://localhost:3000/health](http://localhost:3000/health) in your browser. You should see:
+
+```json
+{"data":{"status":"ok","message":"Metadamen API is healthy"}}
+```
+
+The repo's `.npmrc` makes npm fetch `@metadamen-ai-career-os/*` packages from GitHub Packages, using the login from step 6.
+
+More details: [Backend service](../services/backend-svc.md)
+
+---
+
+## 9. Run the web app (`metadamen-web-app`)
 
 From your `metadamen` folder:
 
@@ -386,13 +424,16 @@ npm install
 npm run dev
 ```
 
-Open the address it prints, usually [http://localhost:5173](http://localhost:5173). Press `Ctrl+C` to stop.
+Open the address it prints: [http://localhost:5173](http://localhost:5173). Press `Ctrl+C` to stop.
+
+Keep the web app on port **5173**: it's the only address the backend API accepts browser calls from (CORS).
+If Vite picks another port because 5173 is busy, stop whatever is using 5173 and start it again.
 
 More details: [metadamen-web-app README](https://github.com/metadamen-ai-career-os/metadamen-web-app#readme)
 
 ---
 
-## 9. AWS infrastructure (`metadamen-infra`), only if you deploy
+## 10. AWS infrastructure (`metadamen-infra`), only if you deploy
 
 You don't need this for local development. If you will deploy to AWS, from your `metadamen` folder:
 
@@ -420,6 +461,7 @@ See the [metadamen-infra README](https://github.com/metadamen-ai-career-os/metad
 - [ ] [http://localhost:4500](http://localhost:4500) shows the Floci console
 - [ ] `npm run db:ping` in `metadamen-packages` prints the Postgres version
 - [ ] `npm run db:migrate` finishes without errors
+- [ ] [http://localhost:3000/health](http://localhost:3000/health) shows `"status":"ok"`
 - [ ] The web app opens at [http://localhost:5173](http://localhost:5173)
 
 ---
@@ -431,6 +473,8 @@ See the [metadamen-infra README](https://github.com/metadamen-ai-career-os/metad
 | Start of the day | `metadamen-tooling` | `npm run docker:up` |
 | After `git pull` in any repo | that repo | `npm install` |
 | After pulling new migrations | `metadamen-packages` | `npm run db:migrate` |
+| While coding the API | `metadamen-backend-svc` | `npm run dev` (leave it running) |
+| While coding the web app | `metadamen-web-app` | `npm run dev` (leave it running) |
 | End of the day (optional, data is kept) | `metadamen-tooling` | `npm run docker:down` |
 
 ---
@@ -460,6 +504,8 @@ See the [metadamen-infra README](https://github.com/metadamen-ai-career-os/metad
 | `npm run check` reformats files you didn't touch | Windows | Same line-ending problem: fix as above and clone the repo again |
 | `npm install` fails with `401 Unauthorized` or `404` for `@metadamen-ai-career-os/...` | both | Not logged in to GitHub Packages, or the token expired or lacks `read:packages`. Repeat step 6 |
 | `git clone` says `Permission denied (publickey)` or `Repository not found` | both | SSH key missing, or you haven't joined the GitHub organization yet. See step 3 |
+| Web app shows a **CORS error** calling the API | both | The web app isn't on `http://localhost:5173`. Free port 5173 and restart `npm run dev` |
+| `npm run dev` in the backend says `EADDRINUSE` | both | Port 3000 is taken. Stop the other program, or the other `npm run dev` you left open |
 | `db:ping` / `db:migrate` can't connect | both | Postgres isn't running. Run `npm run docker:up` in `metadamen-tooling` |
 | `npm install` is very slow or fails with `EPERM` / `EBUSY` | Windows | The folder is inside OneDrive, or antivirus is scanning it. Move it to `C:\Users\<you>\metadamen` |
 | Local database is in a strange state | both | In `metadamen-tooling`: `npm run docker:reset` (⚠️ deletes all local data), then `npm run floci:init`. Then `npm run db:migrate` in `metadamen-packages` |
